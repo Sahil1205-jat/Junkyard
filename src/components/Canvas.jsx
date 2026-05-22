@@ -51,6 +51,18 @@ const PIN_MAP = {
   'Wheel & Tire': [
     { id: 'shaft', position: [0, 0, 0.3], color: '#fcee0a' }
   ],
+  'Axle / Shaft': [
+    { id: 'shaft1', position: [0, 0, 2], color: '#fcee0a' },
+    { id: 'shaft2', position: [0, 0, -2], color: '#fcee0a' }
+  ],
+  'Piezo Buzzer': [
+    { id: 'pos', position: [-0.3, 0.4, 0], color: '#ff3333' },
+    { id: 'neg', position: [0.3, 0.4, 0], color: '#0055ff' }
+  ],
+  'Laser Diode': [
+    { id: 'pos', position: [-0.2, -0.4, 0], color: '#ff3333' },
+    { id: 'neg', position: [0.2, -0.4, 0], color: '#0055ff' }
+  ],
   'Microcontroller Board': [
     { id: 'vcc', position: [-0.9, 0.2, -0.5], color: '#ff3333' },
     { id: 'gnd', position: [-0.9, 0.2, 0.5], color: '#0055ff' },
@@ -71,6 +83,7 @@ const getInternalEdges = (comp) => {
   switch (comp.type) {
     case 'Resistor': return [['p1', 'p2']];
     case 'LED Diode': return [['anode', 'cathode']];
+    case 'Laser Diode': return [['pos', 'neg']];
     case 'DC Brushed Motor': return [['m1', 'm2']];
     case 'SPST Toggle Switch': return comp.data?.toggled ? [['p1', 'p2']] : [];
     case 'Momentary Push Button': return comp.data?.toggled ? [['p1', 'p2']] : [];
@@ -224,6 +237,61 @@ const LEDModel = ({ isPowered }) => (
   </group>
 );
 
+const PiezoModel = ({ isPowered }) => {
+  const ref = useRef();
+  useFrame(() => {
+    if (isPowered && ref.current) {
+        ref.current.position.y = (Math.random() - 0.5) * 0.1;
+    } else if (ref.current) {
+        ref.current.position.y = 0;
+    }
+  });
+  return (
+    <group ref={ref}>
+      <mesh position={[0, 0.2, 0]}>
+        <cylinderGeometry args={[0.6, 0.6, 0.4]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
+      <mesh position={[0, 0.4, 0]}>
+        <cylinderGeometry args={[0.2, 0.2, 0.1]} />
+        <meshStandardMaterial color="#ccc" />
+      </mesh>
+    </group>
+  );
+};
+
+const LaserModel = ({ isPowered }) => {
+  return (
+    <group>
+       <mesh position={[0, 0, 0]} rotation={[Math.PI/2, 0, 0]}>
+          <cylinderGeometry args={[0.2, 0.2, 0.8]} />
+          <meshStandardMaterial color="#d4af37" metalness={0.8} />
+       </mesh>
+       {isPowered && (
+          <mesh position={[0, 0, -10]} rotation={[Math.PI/2, 0, 0]}>
+             <cylinderGeometry args={[0.05, 0.05, 20]} />
+             <meshBasicMaterial color="#ff0000" transparent opacity={0.6} />
+          </mesh>
+       )}
+    </group>
+  );
+};
+
+const AxleModel = ({ rpm }) => {
+  const ref = useRef();
+  useFrame((_, delta) => {
+     if (ref.current) ref.current.rotation.z += delta * rpm;
+  });
+  return (
+    <group ref={ref}>
+       <mesh rotation={[Math.PI/2, 0, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 4]} />
+          <meshStandardMaterial color="#ccc" metalness={0.9} />
+       </mesh>
+    </group>
+  );
+};
+
 const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }) => {
   const pins = PIN_MAP[comp.type] || [];
   
@@ -273,8 +341,14 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
         return <GearModel rpm={rpm} radius={2.5} />;
       case 'Wheel & Tire':
         return <WheelModel rpm={rpm} />;
+      case 'Axle / Shaft':
+        return <AxleModel rpm={rpm} />;
       case 'LED Diode':
         return <LEDModel isPowered={isPowered} />;
+      case 'Laser Diode':
+        return <LaserModel isPowered={isPowered} />;
+      case 'Piezo Buzzer':
+        return <PiezoModel isPowered={isPowered} />;
       case 'Resistor':
         return (
           <group rotation={[0, 0, Math.PI / 2]}>
@@ -638,8 +712,9 @@ const Canvas = () => {
                if (!mechVisited.has(n)) {
                    mechVisited.add(n);
                    const rNext = getRadius(n);
-                   // Belt/Gear RPM ratio transfer: RPM_B = RPM_A * (R_A / R_B)
-                   rpms[n] = rpms[curr] * (rCurr / rNext);
+                   // Belt/Gear RPM ratio transfer: RPM_B = -RPM_A * (R_A / R_B)
+                   // Negative sign simulates physics of gears meshing (opposite rotation direction)
+                   rpms[n] = -rpms[curr] * (rCurr / rNext);
                    mechQ.push(n);
                }
            }
@@ -856,7 +931,14 @@ const Canvas = () => {
                 if (!sourceComp || !targetComp) return null;
                 const p1 = getPinWorldPos(sourceComp, wire.sourcePinId);
                 const p2 = getPinWorldPos(targetComp, wire.targetPinId);
-                return <QuadraticBezierLine key={wire.id} start={p1} end={p2} mid={[(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 2, (p1[2]+p2[2])/2]} color={wire.color} lineWidth={4} />;
+                
+                const isMech = wire.sourcePinId.startsWith('shaft') && wire.targetPinId.startsWith('shaft');
+                const lineColor = isMech ? '#333333' : wire.color;
+                const lineWidth = isMech ? 8 : 4;
+                const midPoint = isMech ? [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 0.5, (p1[2]+p2[2])/2] 
+                                        : [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 2, (p1[2]+p2[2])/2];
+
+                return <QuadraticBezierLine key={wire.id} start={p1} end={p2} mid={midPoint} color={lineColor} lineWidth={lineWidth} dashed={isMech} dashScale={isMech ? 20 : 0} />;
               })}
 
               {drawingWire && drawingWire.currentPos && (() => {
@@ -864,7 +946,14 @@ const Canvas = () => {
                 if (!sourceComp) return null;
                 const p1 = getPinWorldPos(sourceComp, drawingWire.sourcePinId);
                 const p2 = drawingWire.currentPos;
-                return <QuadraticBezierLine start={p1} end={p2} mid={[(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 2, (p1[2]+p2[2])/2]} color={drawingWire.color} lineWidth={4} />;
+                
+                const isMech = drawingWire.sourcePinId.startsWith('shaft');
+                const lineColor = isMech ? '#333333' : drawingWire.color;
+                const lineWidth = isMech ? 8 : 4;
+                const midPoint = isMech ? [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 0.5, (p1[2]+p2[2])/2] 
+                                        : [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 2, (p1[2]+p2[2])/2];
+
+                return <QuadraticBezierLine start={p1} end={p2} mid={midPoint} color={lineColor} lineWidth={lineWidth} dashed={isMech} dashScale={isMech ? 20 : 0} />;
               })()}
             </Suspense>
           </R3FCanvas>

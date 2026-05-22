@@ -21,6 +21,7 @@ const iconMap = {
   'Limit Switch': <GitCommit size={20} color="var(--theme-red)" />,
   
   'LED Diode': <Lightbulb size={20} color="var(--theme-black)" />,
+  'Laser Diode': <Target size={20} color="var(--theme-black)" />,
   'Resistor': <Minus size={20} color="var(--theme-black)" />,
   'Piezo Buzzer': <Volume2 size={20} color="var(--theme-black)" />,
   'Multimeter': <Activity size={20} color="var(--theme-black)" />,
@@ -61,7 +62,7 @@ const ScrapHeap = () => {
     {
       category: 'Outputs & Loads',
       icon: '💡',
-      items: ['LED Diode', 'Resistor', 'Piezo Buzzer', 'Multimeter', 'Oscilloscope']
+      items: ['LED Diode', 'Laser Diode', 'Resistor', 'Piezo Buzzer', 'Multimeter', 'Oscilloscope']
     },
     {
       category: 'Actuators & Kinetics',
