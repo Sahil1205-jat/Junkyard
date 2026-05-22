@@ -84,3 +84,27 @@ http://localhost:5173
 ---
 
 > **Design Aesthetic:** The UI has been heavily customized to resemble a clean, high-tech engineering laboratory interface, leveraging glassmorphism, dynamic lighting, and strict orthographic camera perspectives.
+
+---
+
+## 🌐 Deployment (Vercel)
+
+Deploying the Junkyard Simulator to Vercel is extremely straightforward because it is built on Vite.
+
+### Option 1: Deploy via Vercel Dashboard
+1. Push your code to your GitHub repository.
+2. Log in to [Vercel](https://vercel.com) and click **Add New Project**.
+3. Import your `Junkyard` GitHub repository.
+4. **Important:** Since the React app is inside the `junkyard` folder, set the **Root Directory** to `junkyard`.
+5. Vercel will automatically detect the **Vite** framework. Ensure the settings are:
+   - **Framework Preset:** Vite
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+6. Click **Deploy**. Your simulator will be live in less than a minute!
+
+### Option 2: Deploy via Vercel CLI
+If you prefer the command line:
+1. Install the Vercel CLI globally: `npm i -g vercel`
+2. Navigate to your app directory: `cd junkyard`
+3. Run the deployment command: `vercel`
+4. Follow the prompts (Select Vite as the preset when asked).

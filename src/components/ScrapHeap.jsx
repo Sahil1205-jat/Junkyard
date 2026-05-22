@@ -31,7 +31,9 @@ const iconMap = {
   'Positional Servo': <Target size={20} color="var(--theme-red)" />,
   'Linear Actuator': <MoveVertical size={20} color="var(--theme-red)" />,
   
-  'Spur Gear': <Settings2 size={20} color="var(--theme-blue)" />,
+  'Spur Gear (Small)': <Settings2 size={20} color="var(--theme-blue)" />,
+  'Spur Gear (Medium)': <Settings2 size={24} color="var(--theme-blue)" />,
+  'Spur Gear (Large)': <Settings2 size={28} color="var(--theme-blue)" />,
   'Axle / Shaft': <Minus size={20} color="var(--theme-blue)" style={{ transform: 'rotate(45deg)' }} />,
   'Structural Beam': <Baseline size={20} color="var(--theme-blue)" />,
   'Scrap Plate': <Box size={20} color="var(--theme-blue)" />,
@@ -69,7 +71,7 @@ const ScrapHeap = () => {
     {
       category: 'Mechanical & Structural',
       icon: '🎡',
-      items: ['Spur Gear', 'Axle / Shaft', 'Structural Beam', 'Scrap Plate', 'Wheel & Tire', 'Pulley & Belt', 'PCB Board (Perfboard)']
+      items: ['Spur Gear (Small)', 'Spur Gear (Medium)', 'Spur Gear (Large)', 'Axle / Shaft', 'Structural Beam', 'Scrap Plate', 'Wheel & Tire', 'Pulley & Belt', 'PCB Board (Perfboard)']
     },
     {
       category: 'Brains & Logic',

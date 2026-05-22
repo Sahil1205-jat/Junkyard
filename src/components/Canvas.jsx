@@ -29,9 +29,9 @@ const PIN_MAP = {
     { id: 'p2', position: [0.3, 0.25, 0.3], color: 'silver' }
   ],
   'DC Brushed Motor': [
-    { id: 'm1', position: [-0.2, 1.5, 0], color: '#ff3333' },
-    { id: 'm2', position: [0.2, 1.5, 0], color: '#111' },
-    { id: 'shaft', position: [0, 0, 1.5], color: '#fcee0a' }
+    { id: 'm1', position: [-0.4, 1.45, 0], color: '#ff3333' },
+    { id: 'm2', position: [0.4, 1.45, 0], color: '#111' },
+    { id: 'shaft', position: [0, 0, 1.8], color: '#fcee0a' }
   ],
   'Continuous Servo': [
     { id: 'gnd', position: [-0.2, 1.5, 0], color: '#111' },
@@ -39,7 +39,13 @@ const PIN_MAP = {
     { id: 'sig', position: [0.2, 1.5, 0], color: '#ffcc00' },
     { id: 'shaft', position: [0, 0, 1.5], color: '#fcee0a' }
   ],
-  'Spur Gear': [
+  'Spur Gear (Small)': [
+    { id: 'shaft', position: [0, 0, 0.2], color: '#fcee0a' }
+  ],
+  'Spur Gear (Medium)': [
+    { id: 'shaft', position: [0, 0, 0.2], color: '#fcee0a' }
+  ],
+  'Spur Gear (Large)': [
     { id: 'shaft', position: [0, 0, 0.2], color: '#fcee0a' }
   ],
   'Wheel & Tire': [
@@ -76,40 +82,94 @@ const getInternalEdges = (comp) => {
 const MotorModel = ({ rpm }) => {
   const shaftRef = useRef();
   useFrame((_, delta) => {
-    if (shaftRef.current) shaftRef.current.rotation.y += delta * rpm;
+    if (shaftRef.current) shaftRef.current.rotation.y -= delta * rpm;
   });
   return (
     <group rotation={[Math.PI / 2, 0, 0]}>
+      {/* Motor Body */}
       <mesh>
-        <cylinderGeometry args={[1, 1, 2]} />
-        <meshStandardMaterial color="#888" metalness={0.5} roughness={0.5} />
+        <cylinderGeometry args={[1, 1, 2.5, 32]} />
+        <meshStandardMaterial color="#b0b5b9" metalness={0.8} roughness={0.3} />
       </mesh>
-      <mesh ref={shaftRef} position={[0, 1.2, 0]}>
-        <cylinderGeometry args={[0.2, 0.2, 0.5]} />
-        <meshStandardMaterial color="silver" metalness={1} />
-        <mesh position={[0.15, 0.2, 0]}>
-           <boxGeometry args={[0.1, 0.1, 0.1]} />
-           <meshStandardMaterial color="#ff3333" />
+      {/* Motor End Cap (Plastic) */}
+      <mesh position={[0, 1.3, 0]}>
+        <cylinderGeometry args={[0.95, 0.95, 0.2, 32]} />
+        <meshStandardMaterial color="#222" roughness={0.9} />
+      </mesh>
+      {/* Power Contacts */}
+      <mesh position={[-0.4, 1.45, 0]}>
+        <boxGeometry args={[0.2, 0.3, 0.1]} />
+        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.2} />
+      </mesh>
+      <mesh position={[0.4, 1.45, 0]}>
+        <boxGeometry args={[0.2, 0.3, 0.1]} />
+        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.2} />
+      </mesh>
+      {/* Motor Shaft Mount */}
+      <mesh position={[0, -1.3, 0]}>
+         <cylinderGeometry args={[0.4, 0.4, 0.2, 16]} />
+         <meshStandardMaterial color="#888" metalness={0.6} />
+      </mesh>
+      {/* Rotating Shaft */}
+      <mesh ref={shaftRef} position={[0, -1.6, 0]}>
+        <cylinderGeometry args={[0.15, 0.15, 0.8, 16]} />
+        <meshStandardMaterial color="#e8e9eb" metalness={0.9} roughness={0.1} />
+        {/* Visual spin marker */}
+        <mesh position={[0.1, 0, 0]}>
+           <boxGeometry args={[0.05, 0.8, 0.05]} />
+           <meshStandardMaterial color="#111" />
         </mesh>
       </mesh>
     </group>
   );
 };
 
-const GearModel = ({ rpm }) => {
+const GearModel = ({ rpm, radius = 1.5 }) => {
   const ref = useRef();
   useFrame((_, delta) => {
      if (ref.current) ref.current.rotation.y += delta * rpm;
   });
+
+  const teethCount = Math.floor(radius * 10);
+  const teeth = useMemo(() => {
+    const arr = [];
+    for (let i = 0; i < teethCount; i++) {
+       const angle = (i / teethCount) * Math.PI * 2;
+       arr.push(
+         <mesh key={i} position={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]} rotation={[0, -angle, 0]}>
+            <boxGeometry args={[0.2, 0.2, 0.3]} />
+            <meshStandardMaterial color="#444" metalness={0.7} roughness={0.4} />
+         </mesh>
+       );
+    }
+    return arr;
+  }, [radius, teethCount]);
+
   return (
-    <mesh ref={ref} rotation={[Math.PI / 2, 0, 0]}>
-      <cylinderGeometry args={[1.5, 1.5, 0.2, 16]} />
-      <meshStandardMaterial color="#0055ff" metalness={0.3} roughness={0.4} />
-      <mesh position={[1, 0, 0]}>
-         <boxGeometry args={[0.5, 0.25, 0.3]} />
+    <group ref={ref} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Central Hub */}
+      <mesh>
+        <cylinderGeometry args={[radius * 0.2, radius * 0.2, 0.3, 16]} />
+        <meshStandardMaterial color="#888" metalness={0.8} />
+      </mesh>
+      {/* Spokes or Web */}
+      <mesh>
+        <cylinderGeometry args={[radius * 0.9, radius * 0.9, 0.15, 32]} />
+        <meshStandardMaterial color="#0055ff" metalness={0.3} roughness={0.4} />
+      </mesh>
+      {/* Outer Rim */}
+      <mesh>
+        <cylinderGeometry args={[radius, radius, 0.2, 32]} />
+        <meshStandardMaterial color="#222" metalness={0.5} roughness={0.6} />
+      </mesh>
+      {/* Teeth */}
+      {teeth}
+      {/* Visual Marker (White line to easily see rotation speed) */}
+      <mesh position={[radius * 0.6, 0.1, 0]}>
+         <boxGeometry args={[radius * 0.8, 0.1, 0.1]} />
          <meshStandardMaterial color="#fff" />
       </mesh>
-    </mesh>
+    </group>
   );
 };
 
@@ -121,15 +181,15 @@ const WheelModel = ({ rpm }) => {
   return (
     <group ref={ref} rotation={[Math.PI / 2, 0, 0]}>
       <mesh>
-        <torusGeometry args={[1, 0.4, 16, 32]} />
+        <torusGeometry args={[1.5, 0.4, 16, 32]} />
         <meshStandardMaterial color="#111" roughness={0.9} />
       </mesh>
       <mesh>
-        <cylinderGeometry args={[0.9, 0.9, 0.3]} />
+        <cylinderGeometry args={[1.4, 1.4, 0.3]} />
         <meshStandardMaterial color="#ccc" />
       </mesh>
-      <mesh position={[0.5, 0, 0]}>
-         <boxGeometry args={[0.3, 0.3, 0.4]} />
+      <mesh position={[0.7, 0, 0]}>
+         <boxGeometry args={[0.4, 0.4, 0.4]} />
          <meshStandardMaterial color="#fff" />
       </mesh>
     </group>
@@ -180,21 +240,6 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
             <gridHelper args={[8, 40, '#cccccc', '#cccccc']} position={[0, 0.16, 0]} />
           </mesh>
         );
-      case 'Bench Power Supply':
-      case 'Multimeter':
-      case 'Oscilloscope':
-        return (
-          <group>
-            <mesh position={[0, 1.5, 0]}>
-              <boxGeometry args={[4, 3, 3]} />
-              <meshStandardMaterial color="#e0e4e8" />
-            </mesh>
-            <mesh position={[0, 2, 1.51]}>
-              <planeGeometry args={[3, 1.5]} />
-              <meshBasicMaterial color="#000" />
-            </mesh>
-          </group>
-        );
       case '9V Battery':
       case 'AA Battery Cell':
         return (
@@ -214,12 +259,13 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
           </group>
         );
       case 'DC Brushed Motor':
-      case 'Continuous Servo':
-      case 'Positional Servo':
         return <MotorModel rpm={rpm} />;
-      case 'Spur Gear':
-      case 'Pulley & Belt':
-        return <GearModel rpm={rpm} />;
+      case 'Spur Gear (Small)':
+        return <GearModel rpm={rpm} radius={0.8} />;
+      case 'Spur Gear (Medium)':
+        return <GearModel rpm={rpm} radius={1.5} />;
+      case 'Spur Gear (Large)':
+        return <GearModel rpm={rpm} radius={2.5} />;
       case 'Wheel & Tire':
         return <WheelModel rpm={rpm} />;
       case 'LED Diode':
@@ -281,7 +327,6 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
           </group>
         );
       case 'Microcontroller Board':
-      case 'IC Logic Gates':
         return (
           <group>
             <mesh position={[0, 0.1, 0]}>
@@ -559,11 +604,22 @@ const Canvas = () => {
         }
     });
 
+    const getRadius = (compId) => {
+       const c = currentComponents.find(x => x.id === compId);
+       if (!c) return 1;
+       if (c.type === 'Spur Gear (Small)') return 0.8;
+       if (c.type === 'Spur Gear (Medium)') return 1.5;
+       if (c.type === 'Spur Gear (Large)') return 2.5;
+       if (c.type === 'Wheel & Tire') return 1.5;
+       if (c.type === 'DC Brushed Motor') return 0.5; // Motor drive shaft effective radius
+       return 1;
+    };
+
     const rpms = {};
     const mechQ = [];
     currentComponents.forEach(c => {
-       if (c.type.includes('Motor') && powered.has(c.id)) {
-           rpms[c.id] = 15;
+       if (c.type === 'DC Brushed Motor' && powered.has(c.id)) {
+           rpms[c.id] = 20; // Base motor RPM
            mechQ.push(c.id);
        }
     });
@@ -572,10 +628,13 @@ const Canvas = () => {
     while(mechQ.length > 0) {
        const curr = mechQ.shift();
        if (mechAdj[curr]) {
+           const rCurr = getRadius(curr);
            for (const n of mechAdj[curr]) {
                if (!mechVisited.has(n)) {
                    mechVisited.add(n);
-                   rpms[n] = rpms[curr]; 
+                   const rNext = getRadius(n);
+                   // Belt/Gear RPM ratio transfer: RPM_B = RPM_A * (R_A / R_B)
+                   rpms[n] = rpms[curr] * (rCurr / rNext);
                    mechQ.push(n);
                }
            }
@@ -671,6 +730,13 @@ const Canvas = () => {
 
         {showHelp && (
             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,10,30,0.95)', border: '2px solid #00ffcc', padding: '2rem', color: '#fff', zIndex: 1000, borderRadius: '8px', boxShadow: '0 0 30px rgba(0, 255, 204, 0.4)', minWidth: '400px' }}>
+                <button 
+                  className="cyber-btn danger" 
+                  onPointerDown={(e) => { e.stopPropagation(); setShowHelp(false); }} 
+                  style={{ position: 'absolute', top: '10px', right: '10px', padding: '0.2rem 0.5rem' }}
+                >
+                  X
+                </button>
                 <h2 style={{ color: '#00ffcc', marginTop: 0 }}>⚙️ JUNKYARD MANUAL</h2>
                 <ul style={{ lineHeight: '1.8', fontSize: '14px', listStyleType: 'square' }}>
                    <li><b>Select:</b> Click on a component.</li>
@@ -681,7 +747,13 @@ const Canvas = () => {
                    <li><b>Wire Engine:</b> Drag from a Red/Blue pin to another to route power.</li>
                    <li><b>Mechanical Belts:</b> Drag between Yellow shaft pins to transfer RPM.</li>
                 </ul>
-                <button className="cyber-btn warning" onClick={() => setShowHelp(false)} style={{ width: '100%', marginTop: '1rem' }}>CLOSE</button>
+                <button 
+                  className="cyber-btn warning" 
+                  onPointerDown={(e) => { e.stopPropagation(); setShowHelp(false); }} 
+                  style={{ width: '100%', marginTop: '1rem' }}
+                >
+                  CLOSE MANUAL
+                </button>
             </div>
         )}
 
@@ -699,7 +771,43 @@ const Canvas = () => {
            </div>
         )}
         
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}>
+        <div 
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1 }}
+          onPointerUp={() => { 
+            if (drawingWire) setDrawingWire(null); 
+            if (activeDragId) {
+                if (dragPos) {
+                    const comp = currentComponents.find(c => c.id === activeDragId);
+                    if (comp) {
+                        const m = new THREE.Matrix4();
+                        if (comp.matrix) m.fromArray(comp.matrix);
+                        else m.setPosition(comp.position[0], comp.position[1], comp.position[2]);
+                        m.setPosition(dragPos[0], m.elements[13], dragPos[2]);
+                        commitChange(currentComponents.map(c => c.id === activeDragId ? { ...c, matrix: m.toArray() } : c));
+                    }
+                }
+                setActiveDragId(null);
+                setDragPos(null);
+            }
+          }}
+          onPointerLeave={() => { 
+            if (drawingWire) setDrawingWire(null); 
+            if (activeDragId) {
+                if (dragPos) {
+                    const comp = currentComponents.find(c => c.id === activeDragId);
+                    if (comp) {
+                        const m = new THREE.Matrix4();
+                        if (comp.matrix) m.fromArray(comp.matrix);
+                        else m.setPosition(comp.position[0], comp.position[1], comp.position[2]);
+                        m.setPosition(dragPos[0], m.elements[13], dragPos[2]);
+                        commitChange(currentComponents.map(c => c.id === activeDragId ? { ...c, matrix: m.toArray() } : c));
+                    }
+                }
+                setActiveDragId(null);
+                setDragPos(null);
+            }
+          }}
+        >
           <R3FCanvas camera={{ fov: 50 }} onPointerMissed={() => setActiveId(null)}>
             <CameraController view={view} />
             <Environment preset="city" />
@@ -713,23 +821,6 @@ const Canvas = () => {
                 onPointerMove={(e) => { 
                   if (drawingWire) setDrawingWire(prev => prev ? { ...prev, currentPos: e.point.toArray() } : null); 
                   if (activeDragId) setDragPos(e.point.toArray());
-                }}
-                onPointerUp={() => { 
-                  if (drawingWire) setDrawingWire(null); 
-                  if (activeDragId) {
-                      if (dragPos) {
-                          const comp = currentComponents.find(c => c.id === activeDragId);
-                          if (comp) {
-                              const m = new THREE.Matrix4();
-                              if (comp.matrix) m.fromArray(comp.matrix);
-                              else m.setPosition(comp.position[0], comp.position[1], comp.position[2]);
-                              m.setPosition(dragPos[0], m.elements[13], dragPos[2]);
-                              commitChange(currentComponents.map(c => c.id === activeDragId ? { ...c, matrix: m.toArray() } : c));
-                          }
-                      }
-                      setActiveDragId(null);
-                      setDragPos(null);
-                  }
                 }}
               >
                 <planeGeometry args={[40, 30]} />
