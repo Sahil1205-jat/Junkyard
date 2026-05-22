@@ -131,18 +131,20 @@ const GearModel = ({ rpm, radius = 1.5 }) => {
   });
 
   const teethCount = Math.floor(radius * 10);
-  const teeth = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < teethCount; i++) {
-       const angle = (i / teethCount) * Math.PI * 2;
-       arr.push(
-         <mesh key={i} position={[Math.cos(angle) * radius, 0, Math.sin(angle) * radius]} rotation={[0, -angle, 0]}>
-            <boxGeometry args={[0.2, 0.2, 0.3]} />
-            <meshStandardMaterial color="#444" metalness={0.7} roughness={0.4} />
-         </mesh>
-       );
+  const instancedRef = useRef();
+
+  useEffect(() => {
+    if (instancedRef.current) {
+      const dummy = new THREE.Object3D();
+      for (let i = 0; i < teethCount; i++) {
+        const angle = (i / teethCount) * Math.PI * 2;
+        dummy.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+        dummy.rotation.set(0, -angle, 0);
+        dummy.updateMatrix();
+        instancedRef.current.setMatrixAt(i, dummy.matrix);
+      }
+      instancedRef.current.instanceMatrix.needsUpdate = true;
     }
-    return arr;
   }, [radius, teethCount]);
 
   return (
@@ -163,7 +165,10 @@ const GearModel = ({ rpm, radius = 1.5 }) => {
         <meshStandardMaterial color="#222" metalness={0.5} roughness={0.6} />
       </mesh>
       {/* Teeth */}
-      {teeth}
+      <instancedMesh ref={instancedRef} args={[null, null, teethCount]}>
+        <boxGeometry args={[0.2, 0.2, 0.3]} />
+        <meshStandardMaterial color="#444" metalness={0.7} roughness={0.4} />
+      </instancedMesh>
       {/* Visual Marker (White line to easily see rotation speed) */}
       <mesh position={[radius * 0.6, 0.1, 0]}>
          <boxGeometry args={[radius * 0.8, 0.1, 0.1]} />
