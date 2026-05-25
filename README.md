@@ -8,6 +8,7 @@
 
 ## ✨ Key Features
 
+
 - **Interactive 3D Sandbox:** Drop components like DC Motors, Batteries, LEDs, and Microcontrollers onto a virtual workbench.
 - **Electrical Graph Engine:** Connect terminals using virtual wiring. A BFS-based graph solver mathematically calculates current flow and dynamically powers components on the board.
 - **Mechanical Torque Engine:** Connect spinning shafts using mechanical belts (yellow). If a motor spins, linked gears and wheels will animate in physical sync.
