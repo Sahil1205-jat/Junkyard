@@ -36,7 +36,7 @@ Ensure you have [Node.js](https://nodejs.org/) installed on your machine.
 ### 2. Clone the Repository
 ```bash
 git clone https://github.com/Sahil1205-jat/Junkyard.git
-cd Junkyard/junkyard
+cd Junkyard
 ```
 
 ### 3. Install Dependencies
@@ -96,7 +96,7 @@ Deploying the Junkyard Simulator to Vercel is extremely straightforward because 
 1. Push your code to your GitHub repository.
 2. Log in to [Vercel](https://vercel.com) and click **Add New Project**.
 3. Import your `Junkyard` GitHub repository.
-4. **Important:** Since the React app is inside the `junkyard` folder, set the **Root Directory** to `junkyard`.
+4. Since the React app is at the root level, no root directory configuration is needed.
 5. Vercel will automatically detect the **Vite** framework. Ensure the settings are:
    - **Framework Preset:** Vite
    - **Build Command:** `npm run build`
@@ -106,6 +106,8 @@ Deploying the Junkyard Simulator to Vercel is extremely straightforward because 
 ### Option 2: Deploy via Vercel CLI
 If you prefer the command line:
 1. Install the Vercel CLI globally: `npm i -g vercel`
-2. Navigate to your app directory: `cd junkyard`
+2. Navigate to your app directory: `cd Junkyard`
 3. Run the deployment command: `vercel`
 4. Follow the prompts (Select Vite as the preset when asked).
+
+
