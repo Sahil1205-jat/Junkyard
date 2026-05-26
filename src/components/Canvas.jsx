@@ -99,6 +99,64 @@ const getInternalEdges = (comp) => {
   }
 };
 
+const MovingBelt = ({ start, end, mid, rpm }) => {
+  const lineRef = useRef();
+  
+  useFrame((_, delta) => {
+    if (lineRef.current && lineRef.current.material) {
+      lineRef.current.material.dashOffset -= delta * rpm * 2;
+    }
+  });
+
+  return (
+    <QuadraticBezierLine 
+      ref={lineRef}
+      start={start} 
+      end={end} 
+      mid={mid} 
+      color="#fcee0a" 
+      lineWidth={8} 
+      dashed 
+      dashScale={2}
+      dashSize={0.5}
+      gapSize={0.3}
+    />
+  );
+};
+
+const MovingWire = ({ start, end, mid, color, isPowered }) => {
+  const flowRef = useRef();
+  
+  useFrame((_, delta) => {
+    if (isPowered && flowRef.current && flowRef.current.material) {
+      flowRef.current.material.dashOffset -= delta * 12;
+    }
+  });
+
+  return (
+    <group>
+      {/* Solid Base Wire */}
+      <QuadraticBezierLine start={start} end={end} mid={mid} color={color} lineWidth={4} />
+      
+      {/* Overlaying Animated Flow */}
+      {isPowered && (
+        <QuadraticBezierLine 
+          ref={flowRef}
+          start={start} 
+          end={end} 
+          mid={mid} 
+          color="#00ffcc" 
+          lineWidth={2} 
+          dashed 
+          dashScale={4}
+          dashSize={0.4}
+          gapSize={0.6}
+        />
+      )}
+    </group>
+  );
+};
+
 const Battery9VModel = () => (
   <group>
     {/* Main Enclosure (Metallic Navy Blue) */}
@@ -1072,12 +1130,16 @@ const Canvas = () => {
                 const p2 = getPinWorldPos(targetComp, wire.targetPinId);
                 
                 const isMech = wire.sourcePinId.startsWith('shaft') && wire.targetPinId.startsWith('shaft');
-                const lineColor = isMech ? '#333333' : wire.color;
-                const lineWidth = isMech ? 8 : 4;
                 const midPoint = isMech ? [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 0.5, (p1[2]+p2[2])/2] 
                                         : [(p1[0]+p2[0])/2, Math.max(p1[1], p2[1]) + 2, (p1[2]+p2[2])/2];
 
-                return <QuadraticBezierLine key={wire.id} start={p1} end={p2} mid={midPoint} color={lineColor} lineWidth={lineWidth} dashed={isMech} dashScale={isMech ? 20 : 0} />;
+                if (isMech) {
+                  const rpm = rpmMap[wire.sourceCompId] || rpmMap[wire.targetCompId] || 0;
+                  return <MovingBelt key={wire.id} start={p1} end={p2} mid={midPoint} rpm={rpm} />;
+                } else {
+                  const isPowered = poweredIds.has(wire.sourceCompId) && poweredIds.has(wire.targetCompId);
+                  return <MovingWire key={wire.id} start={p1} end={p2} mid={midPoint} color={wire.color} isPowered={isPowered} />;
+                }
               })}
 
               {drawingWire && drawingWire.currentPos && (() => {
