@@ -19,6 +19,11 @@ const PIN_MAP = {
   'Ground (GND)': [
     { id: 'gnd', position: [0, 0.5, 0], color: '#00ffcc' }
   ],
+  'Potentiometer': [
+    { id: 'p1', position: [-0.4, 0.4, 0.5], color: '#ff3333' },
+    { id: 'wiper', position: [0, 0.4, 0.6], color: '#ffcc00' },
+    { id: 'p2', position: [0.4, 0.4, 0.5], color: '#0055ff' }
+  ],
   'LED Diode': [
     { id: 'anode', position: [-0.1, -0.5, 0], color: '#ff3333' },
     { id: 'cathode', position: [0.1, -0.7, 0], color: '#0055ff' }
@@ -95,6 +100,7 @@ const getInternalEdges = (comp) => {
     case 'SPST Toggle Switch': return comp.data?.toggled ? [['p1', 'p2']] : [];
     case 'Momentary Push Button': return comp.data?.toggled ? [['p1', 'p2']] : [];
     case 'Piezo Buzzer': return [['pos', 'neg']];
+    case 'Potentiometer': return [['p1', 'wiper']];
     default: return [];
   }
 };
@@ -299,6 +305,53 @@ const GroundModel = () => (
   </group>
 );
 
+const PotentiometerModel = ({ value }) => {
+  const angle = (value !== undefined ? value : 0.5) * Math.PI * 1.5 - Math.PI * 0.75;
+  
+  return (
+    <group>
+      {/* Main Base Housing */}
+      <mesh position={[0, 0.2, 0]}>
+        <cylinderGeometry args={[0.6, 0.6, 0.4, 8]} />
+        <meshStandardMaterial color="#2c3e50" metalness={0.7} roughness={0.3} />
+      </mesh>
+      {/* Threaded Metal Collar */}
+      <mesh position={[0, 0.45, 0]}>
+        <cylinderGeometry args={[0.25, 0.25, 0.1, 16]} />
+        <meshStandardMaterial color="#8e9aaf" metalness={0.9} roughness={0.2} />
+      </mesh>
+      {/* Rotating Dial Knob assembly */}
+      <group position={[0, 0.5, 0]} rotation={[0, angle, 0]}>
+        <mesh position={[0, 0.15, 0]}>
+          <cylinderGeometry args={[0.15, 0.15, 0.3, 16]} />
+          <meshStandardMaterial color="#b87333" metalness={0.9} roughness={0.1} />
+        </mesh>
+        <mesh position={[0, 0.32, 0]}>
+          <cylinderGeometry args={[0.45, 0.45, 0.08, 16]} />
+          <meshStandardMaterial color="#ef233c" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, 0.37, -0.3]}>
+          <boxGeometry args={[0.08, 0.04, 0.2]} />
+          <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.3} />
+        </mesh>
+      </group>
+      {/* 3 Metal wire connection posts */}
+      <mesh position={[-0.4, 0.2, 0.55]}>
+        <boxGeometry args={[0.1, 0.2, 0.1]} />
+        <meshStandardMaterial color="silver" metalness={0.95} />
+      </mesh>
+      <mesh position={[0, 0.2, 0.6]}>
+        <boxGeometry args={[0.1, 0.2, 0.1]} />
+        <meshStandardMaterial color="silver" metalness={0.95} />
+      </mesh>
+      <mesh position={[0.4, 0.2, 0.55]}>
+        <boxGeometry args={[0.1, 0.2, 0.1]} />
+        <meshStandardMaterial color="silver" metalness={0.95} />
+      </mesh>
+    </group>
+  );
+};
+
 const MotorModel = ({ rpm }) => {
   const shaftRef = useRef();
   useFrame((_, delta) => {
@@ -421,28 +474,31 @@ const WheelModel = ({ rpm }) => {
   );
 };
 
-const LEDModel = ({ isPowered }) => (
-  <group>
-    <mesh position={[0, 0.5, 0]}>
-      <sphereGeometry args={[0.3]} />
-      <meshStandardMaterial 
-        color={isPowered ? "#ff3333" : "#551111"} 
-        emissive="#ff3333" 
-        emissiveIntensity={isPowered ? 5 : 0} 
-        transparent 
-        opacity={0.9} 
-      />
-    </mesh>
-    <mesh position={[-0.1, 0, 0]}>
-      <cylinderGeometry args={[0.02, 0.02, 1]} />
-      <meshStandardMaterial color="silver" />
-    </mesh>
-    <mesh position={[0.1, -0.2, 0]}>
-      <cylinderGeometry args={[0.02, 0.02, 1.4]} />
-      <meshStandardMaterial color="silver" />
-    </mesh>
-  </group>
-);
+const LEDModel = ({ isPowered, potValue }) => {
+  const intensity = isPowered ? 5 * (potValue !== undefined ? potValue : 1.0) : 0;
+  return (
+    <group>
+      <mesh position={[0, 0.5, 0]}>
+        <sphereGeometry args={[0.3]} />
+        <meshStandardMaterial 
+          color={isPowered ? "#ff3333" : "#551111"} 
+          emissive="#ff3333" 
+          emissiveIntensity={intensity} 
+          transparent 
+          opacity={0.9} 
+        />
+      </mesh>
+      <mesh position={[-0.1, 0, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 1]} />
+        <meshStandardMaterial color="silver" />
+      </mesh>
+      <mesh position={[0.1, -0.2, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 1.4]} />
+        <meshStandardMaterial color="silver" />
+      </mesh>
+    </group>
+  );
+};
 
 const PiezoModel = ({ isPowered }) => {
   const ref = useRef();
@@ -467,7 +523,8 @@ const PiezoModel = ({ isPowered }) => {
   );
 };
 
-const LaserModel = ({ isPowered }) => {
+const LaserModel = ({ isPowered, potValue }) => {
+  const opacity = isPowered ? 0.6 * (potValue !== undefined ? potValue : 1.0) : 0;
   return (
     <group>
        <mesh position={[0, 0, 0]} rotation={[Math.PI/2, 0, 0]}>
@@ -477,7 +534,7 @@ const LaserModel = ({ isPowered }) => {
        {isPowered && (
           <mesh position={[0, 0, -10]} rotation={[Math.PI/2, 0, 0]}>
              <cylinderGeometry args={[0.05, 0.05, 20]} />
-             <meshBasicMaterial color="#ff0000" transparent opacity={0.6} />
+             <meshBasicMaterial color="#ff0000" transparent opacity={opacity} />
           </mesh>
        )}
     </group>
@@ -499,7 +556,7 @@ const AxleModel = ({ rpm }) => {
   );
 };
 
-const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }) => {
+const ModelFactory = ({ comp, isPowered, rpm, potValue, onStartWire, onEndWire, onToggle }) => {
   const pins = PIN_MAP[comp.type] || [];
   
   const BaseMesh = () => {
@@ -528,6 +585,8 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
         return <BenchPowerSupplyModel isPowered={isPowered} />;
       case 'Ground (GND)':
         return <GroundModel />;
+      case 'Potentiometer':
+        return <PotentiometerModel value={comp.data?.value} />;
       case 'DC Brushed Motor':
         return <MotorModel rpm={rpm} />;
       case 'Spur Gear (Small)':
@@ -541,9 +600,9 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
       case 'Axle / Shaft':
         return <AxleModel rpm={rpm} />;
       case 'LED Diode':
-        return <LEDModel isPowered={isPowered} />;
+        return <LEDModel isPowered={isPowered} potValue={potValue} />;
       case 'Laser Diode':
-        return <LaserModel isPowered={isPowered} />;
+        return <LaserModel isPowered={isPowered} potValue={potValue} />;
       case 'Piezo Buzzer':
         return <PiezoModel isPowered={isPowered} />;
       case 'Resistor':
@@ -660,7 +719,7 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
   );
 };
 
-const DraggableModel = ({ comp, isActive, isPowered, rpm, isDragging, dragPos, onClick, onCommit, onStartWire, onEndWire, onToggle, onStartDrag }) => {
+const DraggableModel = ({ comp, isActive, isPowered, rpm, potValue, isDragging, dragPos, onClick, onCommit, onStartWire, onEndWire, onToggle, onStartDrag }) => {
   const matrix = useMemo(() => {
     const m = new THREE.Matrix4();
     if (comp.matrix) m.fromArray(comp.matrix);
@@ -687,13 +746,13 @@ const DraggableModel = ({ comp, isActive, isPowered, rpm, isDragging, dragPos, o
     >
       <group onPointerDown={(e) => { 
         e.stopPropagation(); 
-        if (e.ctrlKey) {
-           if (!comp.data?.locked && onStartDrag) onStartDrag(comp.id);
+        if (!comp.data?.locked && onStartDrag) {
+           onStartDrag(comp.id);
         } else {
            onClick(comp.id); 
         }
       }}>
-        <ModelFactory comp={comp} isPowered={isPowered} rpm={rpm} onStartWire={onStartWire} onEndWire={onEndWire} onToggle={onToggle} />
+        <ModelFactory comp={comp} isPowered={isPowered} rpm={rpm} potValue={potValue} onStartWire={onStartWire} onEndWire={onEndWire} onToggle={onToggle} />
       </group>
     </PivotControls>
   );
@@ -983,6 +1042,11 @@ const Canvas = () => {
     commitChange(newComps);
   };
 
+  const handleSliderChange = (id, val) => {
+    const newComps = currentComponents.map(c => c.id === id ? { ...c, data: { ...c.data, value: val } } : c);
+    commitChange(newComps);
+  };
+
   const activeComp = currentComponents.find(c => c.id === activeId);
 
   return (
@@ -1018,7 +1082,7 @@ const Canvas = () => {
                 <ul style={{ lineHeight: '1.8', fontSize: '14px', listStyleType: 'square' }}>
                    <li><b>Select:</b> Click on a component.</li>
                    <li><b>Rotate:</b> Select it, then drag the 3D circular rings.</li>
-                   <li><b>Move:</b> Hold <kbd style={{background:'#333', padding:'2px 6px', borderRadius:'4px'}}>CTRL</kbd> + Click & Drag directly on the component.</li>
+                   <li><b>Move:</b> Click & Drag directly on the component.</li>
                    <li><b>Lock / Unlock:</b> Select a component, then press <kbd style={{background:'#333', padding:'2px 6px', borderRadius:'4px'}}>CTRL + C</kbd>. (Locked objects cannot be moved or deleted, and show a red lock block).</li>
                    <li><b>Delete:</b> Select it, then press <kbd style={{background:'#333', padding:'2px 6px', borderRadius:'4px'}}>DELETE</kbd> or <kbd style={{background:'#333', padding:'2px 6px', borderRadius:'4px'}}>BACKSPACE</kbd>.</li>
                    <li><b>Wire Engine:</b> Drag from a Red/Blue pin to another to route power.</li>
@@ -1045,6 +1109,23 @@ const Canvas = () => {
                   onKeyDown={(e) => e.stopPropagation()} 
                />
                <p style={{ fontSize: '10px', color: '#666', marginTop: '0.5rem', textAlign: 'right' }}>Changes apply instantly via eval() loop</p>
+           </div>
+        )}
+
+        {activeComp?.type === 'Potentiometer' && (
+           <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', width: '380px', background: 'rgba(0,10,30,0.9)', border: '1px solid #ffcc00', padding: '1rem', color: '#fff', zIndex: 100, borderRadius: '6px', boxShadow: '0 0 20px rgba(255, 204, 0, 0.3)' }}>
+               <h3 style={{ margin: '0 0 0.5rem 0', color: '#ffcc00', fontSize: '0.9rem', fontFamily: 'monospace', letterSpacing: '1px' }}>ANALOG CONTROLLER</h3>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                 <input 
+                    type="range" min="0" max="1" step="0.01"
+                    style={{ flex: 1, accentColor: '#ffcc00', cursor: 'pointer' }}
+                    value={activeComp.data?.value !== undefined ? activeComp.data.value : 0.5}
+                    onChange={(e) => handleSliderChange(activeComp.id, parseFloat(e.target.value))}
+                 />
+                 <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', color: '#ffcc00', minWidth: '50px', textAlign: 'right' }}>
+                    {Math.round((activeComp.data?.value !== undefined ? activeComp.data.value : 0.5) * 100)}%
+                 </span>
+               </div>
            </div>
         )}
         
@@ -1105,22 +1186,27 @@ const Canvas = () => {
                 <gridHelper args={[40, 40, '#888888', '#aaaaaa']} rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.01]} material-opacity={0.5} material-transparent />
               </mesh>
 
-              {currentComponents.map((comp) => (
-                <DraggableModel 
-                  key={comp.id} comp={comp} isActive={activeId === comp.id} isPowered={poweredIds.has(comp.id)} rpm={rpmMap[comp.id] || 0}
-                  isDragging={activeDragId === comp.id} dragPos={dragPos}
-                  onClick={setActiveId} onCommit={(id, matrix) => commitChange(currentComponents.map(c => c.id === id ? { ...c, matrix } : c))}
-                  onStartDrag={(id) => { setActiveId(id); setActiveDragId(id); setDragPos(null); }}
-                  onStartWire={(id, pin, color) => { setActiveId(null); setDrawingWire({ sourceCompId: id, sourcePinId: pin, color, currentPos: null }); }} 
-                  onEndWire={(targetCompId, targetPinId) => {
-                    if (!drawingWire || drawingWire.sourceCompId === targetCompId) { setDrawingWire(null); return; }
-                    const exists = currentWires.find(w => (w.sourceCompId === drawingWire.sourceCompId && w.sourcePinId === drawingWire.sourcePinId && w.targetCompId === targetCompId && w.targetPinId === targetPinId) || (w.targetCompId === drawingWire.sourceCompId && w.targetPinId === drawingWire.sourcePinId && w.sourceCompId === targetCompId && w.sourcePinId === targetPinId));
-                    if (!exists) commitChange(currentComponents, [...currentWires, { id: `wire-${Date.now()}`, sourceCompId: drawingWire.sourceCompId, sourcePinId: drawingWire.sourcePinId, targetCompId, targetPinId, color: drawingWire.color || 'silver' }]);
-                    setDrawingWire(null);
-                  }}
-                  onToggle={handleToggle}
-                />
-              ))}
+              {currentComponents.map((comp) => {
+                const pot = currentComponents.find(x => x.type === 'Potentiometer');
+                const potValue = pot ? (pot.data?.value !== undefined ? pot.data.value : 0.5) : 1.0;
+                return (
+                  <DraggableModel 
+                    key={comp.id} comp={comp} isActive={activeId === comp.id} isPowered={poweredIds.has(comp.id)} rpm={rpmMap[comp.id] || 0}
+                    potValue={potValue}
+                    isDragging={activeDragId === comp.id} dragPos={dragPos}
+                    onClick={setActiveId} onCommit={(id, matrix) => commitChange(currentComponents.map(c => c.id === id ? { ...c, matrix } : c))}
+                    onStartDrag={(id) => { setActiveId(id); setActiveDragId(id); setDragPos(null); }}
+                    onStartWire={(id, pin, color) => { setActiveId(null); setDrawingWire({ sourceCompId: id, sourcePinId: pin, color, currentPos: null }); }} 
+                    onEndWire={(targetCompId, targetPinId) => {
+                      if (!drawingWire || drawingWire.sourceCompId === targetCompId) { setDrawingWire(null); return; }
+                      const exists = currentWires.find(w => (w.sourceCompId === drawingWire.sourceCompId && w.sourcePinId === drawingWire.sourcePinId && w.targetCompId === targetCompId && w.targetPinId === targetPinId) || (w.targetCompId === drawingWire.sourceCompId && w.targetPinId === drawingWire.sourcePinId && w.sourceCompId === targetCompId && w.sourcePinId === targetPinId));
+                      if (!exists) commitChange(currentComponents, [...currentWires, { id: `wire-${Date.now()}`, sourceCompId: drawingWire.sourceCompId, sourcePinId: drawingWire.sourcePinId, targetCompId, targetPinId, color: drawingWire.color || 'silver' }]);
+                      setDrawingWire(null);
+                    }}
+                    onToggle={handleToggle}
+                  />
+                );
+              })}
 
               {currentWires.map(wire => {
                 const sourceComp = currentComponents.find(c => c.id === wire.sourceCompId);

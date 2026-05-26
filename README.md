@@ -66,7 +66,7 @@ http://localhost:5173
 | **Spawn Component** | Drag any component from the left inventory directly onto the main 3D workbench. |
 | **Select Component** | Click on any component on the board to select it. |
 | **Rotate Object** | Click on a component, then use the 3D circular gizmo rings to rotate it freely. |
-| **Move Object** | Hold `CTRL` and **Click & Drag** directly on the component. |
+| **Move Object** | **Click & Drag** directly on the component. |
 | **Lock / Unlock** | Select an object and press `CTRL + C`. (A red lock block will appear, preventing movement or deletion). |
 | **Delete** | Select an object and press `DELETE` or `BACKSPACE`. |
 | **Wire Engine** | Click and drag from a Red (Pos) or Blue (Neg) pin to another pin to route electricity. |
