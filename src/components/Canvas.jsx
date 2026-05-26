@@ -5,12 +5,19 @@ import * as THREE from 'three';
 
 const PIN_MAP = {
   '9V Battery': [
-    { id: 'pos', position: [-0.2, 0.9, 0], color: '#ff3333' },
-    { id: 'neg', position: [0.2, 0.9, 0], color: '#0055ff' }
+    { id: 'pos', position: [-0.25, 0.9, 0], color: '#ff3333' },
+    { id: 'neg', position: [0.25, 0.9, 0], color: '#0055ff' }
   ],
   'AA Battery Cell': [
-    { id: 'pos', position: [-0.2, 0.9, 0], color: '#ff3333' },
-    { id: 'neg', position: [0.2, 0.9, 0], color: '#0055ff' }
+    { id: 'pos', position: [0, 1.05, 0], color: '#ff3333' },
+    { id: 'neg', position: [0, -1.05, 0], color: '#0055ff' }
+  ],
+  'Bench Power Supply': [
+    { id: 'pos', position: [-0.4, -0.5, 0.94], color: '#ff3333' },
+    { id: 'neg', position: [0.4, -0.5, 0.94], color: '#0055ff' }
+  ],
+  'Ground (GND)': [
+    { id: 'gnd', position: [0, 0.5, 0], color: '#00ffcc' }
   ],
   'LED Diode': [
     { id: 'anode', position: [-0.1, -0.5, 0], color: '#ff3333' },
@@ -91,6 +98,148 @@ const getInternalEdges = (comp) => {
     default: return [];
   }
 };
+
+const Battery9VModel = () => (
+  <group>
+    {/* Main Enclosure (Metallic Navy Blue) */}
+    <mesh position={[0, 0, 0]}>
+      <boxGeometry args={[1.0, 1.6, 0.6]} />
+      <meshStandardMaterial color="#0b132b" metalness={0.8} roughness={0.2} />
+    </mesh>
+    {/* Top Metal Plate (Silver) */}
+    <mesh position={[0, 0.81, 0]}>
+      <boxGeometry args={[0.98, 0.03, 0.58]} />
+      <meshStandardMaterial color="#c0c0c0" metalness={0.9} roughness={0.1} />
+    </mesh>
+    {/* Gold Label Band */}
+    <mesh position={[0, 0.3, 0]}>
+      <boxGeometry args={[1.02, 0.25, 0.62]} />
+      <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.3} />
+    </mesh>
+    {/* Hex/Flower female snap ring (Negative Pole) */}
+    <mesh position={[0.25, 0.9, 0]}>
+      <cylinderGeometry args={[0.16, 0.16, 0.15, 6]} />
+      <meshStandardMaterial color="#7a7a7a" metalness={0.95} roughness={0.2} />
+    </mesh>
+    {/* Circular male snap plug (Positive Pole) */}
+    <mesh position={[-0.25, 0.9, 0]}>
+      <cylinderGeometry args={[0.12, 0.12, 0.15, 16]} />
+      <meshStandardMaterial color="#b08d27" metalness={0.9} roughness={0.1} />
+    </mesh>
+  </group>
+);
+
+const AABatteryModel = () => (
+  <group>
+    {/* Main insulated canister wrap */}
+    <mesh position={[0, 0, 0]}>
+      <cylinderGeometry args={[0.3, 0.3, 1.8, 32]} />
+      <meshStandardMaterial color="#1a1a1a" metalness={0.7} roughness={0.4} />
+    </mesh>
+    {/* Golden label shell */}
+    <mesh position={[0, 0, 0]}>
+      <cylinderGeometry args={[0.31, 0.31, 1.0, 32]} />
+      <meshStandardMaterial color="#d4af37" metalness={0.9} roughness={0.2} />
+    </mesh>
+    {/* Flat silver negative bottom cap */}
+    <mesh position={[0, -0.9, 0]}>
+      <cylinderGeometry args={[0.29, 0.29, 0.05, 32]} />
+      <meshStandardMaterial color="#c8c8c8" metalness={0.95} roughness={0.1} />
+    </mesh>
+    {/* Copper/Gold positive collar cap */}
+    <mesh position={[0, 0.9, 0]}>
+      <cylinderGeometry args={[0.29, 0.29, 0.05, 32]} />
+      <meshStandardMaterial color="#b08d27" metalness={0.9} roughness={0.2} />
+    </mesh>
+    {/* Positive contact button nub */}
+    <mesh position={[0, 0.95, 0]}>
+      <cylinderGeometry args={[0.1, 0.1, 0.1, 16]} />
+      <meshStandardMaterial color="#b08d27" metalness={0.95} roughness={0.1} />
+    </mesh>
+  </group>
+);
+
+const BenchPowerSupplyModel = ({ isPowered }) => (
+  <group>
+    {/* Chassis Body */}
+    <mesh position={[0, 0, 0]}>
+      <boxGeometry args={[2, 1.8, 1.8]} />
+      <meshStandardMaterial color="#2d3142" roughness={0.7} metalness={0.5} />
+    </mesh>
+    {/* Front Faceplate */}
+    <mesh position={[0, 0, 0.91]}>
+      <boxGeometry args={[1.9, 1.7, 0.05]} />
+      <meshStandardMaterial color="#1a1d20" roughness={0.8} />
+    </mesh>
+    {/* Screen Frame */}
+    <mesh position={[0, 0.4, 0.94]}>
+      <boxGeometry args={[1.4, 0.5, 0.02]} />
+      <meshStandardMaterial color="#0f1115" roughness={0.9} />
+    </mesh>
+    {/* Glowing digital readout panel */}
+    <mesh position={[0, 0.4, 0.96]}>
+      <boxGeometry args={[1.3, 0.4, 0.01]} />
+      <meshStandardMaterial 
+        color={isPowered ? "#00ffcc" : "#10201c"} 
+        emissive={isPowered ? "#00ffcc" : "#000000"} 
+        emissiveIntensity={isPowered ? 3.5 : 0} 
+      />
+    </mesh>
+    {/* Dial Controls (Voltage & Current tuning) */}
+    <mesh position={[-0.4, -0.1, 0.95]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.18, 0.18, 0.1, 16]} />
+      <meshStandardMaterial color="#ff5a5f" roughness={0.6} />
+    </mesh>
+    <mesh position={[0.4, -0.1, 0.95]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.18, 0.18, 0.1, 16]} />
+      <meshStandardMaterial color="#00a8cc" roughness={0.6} />
+    </mesh>
+    {/* Binding Post Terminals (Red and Black caps) */}
+    <mesh position={[-0.4, -0.5, 0.94]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.1, 0.1, 0.15, 12]} />
+      <meshStandardMaterial color="#d90429" metalness={0.7} roughness={0.3} />
+    </mesh>
+    <mesh position={[0.4, -0.5, 0.94]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.1, 0.1, 0.15, 12]} />
+      <meshStandardMaterial color="#111" metalness={0.7} roughness={0.3} />
+    </mesh>
+  </group>
+);
+
+const GroundModel = () => (
+  <group>
+    {/* Copper stake rod */}
+    <mesh position={[0, -0.3, 0]}>
+      <cylinderGeometry args={[0.08, 0.05, 1.2, 16]} />
+      <meshStandardMaterial color="#c07040" metalness={0.9} roughness={0.1} />
+    </mesh>
+    {/* Brass ground clamp collar */}
+    <mesh position={[0, 0.2, 0]}>
+      <cylinderGeometry args={[0.14, 0.14, 0.2, 8]} />
+      <meshStandardMaterial color="#d4af37" metalness={0.8} roughness={0.3} />
+    </mesh>
+    {/* Mock green ground wire connector */}
+    <mesh position={[0.08, 0.2, 0.05]} rotation={[0.2, 0.5, 0.4]}>
+      <cylinderGeometry args={[0.04, 0.04, 0.4, 8]} />
+      <meshStandardMaterial color="#39ff14" emissive="#22aa0f" emissiveIntensity={0.2} />
+    </mesh>
+    {/* Ground Schematic Glyph */}
+    <group position={[0, 0.45, 0]}>
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[0.6, 0.05, 0.05]} />
+        <meshStandardMaterial color="#00ffcc" emissive="#00ffcc" emissiveIntensity={0.5} />
+      </mesh>
+      <mesh position={[0, -0.1, 0]}>
+        <boxGeometry args={[0.4, 0.05, 0.05]} />
+        <meshStandardMaterial color="#00ffcc" emissive="#00ffcc" emissiveIntensity={0.5} />
+      </mesh>
+      <mesh position={[0, -0.2, 0]}>
+        <boxGeometry args={[0.2, 0.05, 0.05]} />
+        <meshStandardMaterial color="#00ffcc" emissive="#00ffcc" emissiveIntensity={0.5} />
+      </mesh>
+    </group>
+  </group>
+);
 
 const MotorModel = ({ rpm }) => {
   const shaftRef = useRef();
@@ -314,23 +463,13 @@ const ModelFactory = ({ comp, isPowered, rpm, onStartWire, onEndWire, onToggle }
           </mesh>
         );
       case '9V Battery':
+        return <Battery9VModel />;
       case 'AA Battery Cell':
-        return (
-          <group>
-            <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[1, 1.5, 0.5]} />
-              <meshStandardMaterial color="#111" />
-            </mesh>
-            <mesh position={[-0.2, 0.8, 0]}>
-               <cylinderGeometry args={[0.1, 0.1, 0.2]} />
-               <meshStandardMaterial color="silver" />
-            </mesh>
-            <mesh position={[0.2, 0.8, 0]}>
-               <cylinderGeometry args={[0.1, 0.1, 0.2]} />
-               <meshStandardMaterial color="silver" />
-            </mesh>
-          </group>
-        );
+        return <AABatteryModel />;
+      case 'Bench Power Supply':
+        return <BenchPowerSupplyModel isPowered={isPowered} />;
+      case 'Ground (GND)':
+        return <GroundModel />;
       case 'DC Brushed Motor':
         return <MotorModel rpm={rpm} />;
       case 'Spur Gear (Small)':
@@ -634,7 +773,7 @@ const Canvas = () => {
         return false;
     };
 
-    const batteries = currentComponents.filter(c => c.type === '9V Battery' || c.type === 'AA Battery Cell');
+    const batteries = currentComponents.filter(c => c.type === '9V Battery' || c.type === 'AA Battery Cell' || c.type === 'Bench Power Supply');
     const virtualBatteries = currentComponents.filter(c => c.type === 'Microcontroller Board' && mcuStatesRef.current[c.id]?.d0);
 
     currentComponents.forEach(c => {
