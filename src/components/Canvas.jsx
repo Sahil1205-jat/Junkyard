@@ -24,6 +24,14 @@ const PIN_MAP = {
     { id: 'wiper', position: [0, 0.4, 0.6], color: '#ffcc00' },
     { id: 'p2', position: [0.4, 0.4, 0.5], color: '#0055ff' }
   ],
+  'Multimeter': [
+    { id: 'pos', position: [-0.25, -0.6, 0.22], color: '#ff3333' },
+    { id: 'neg', position: [0.25, -0.6, 0.22], color: '#0055ff' }
+  ],
+  'Oscilloscope': [
+    { id: 'sig', position: [0.6, -0.45, 0.75], color: '#ff3333' },
+    { id: 'gnd', position: [0.8, -0.45, 0.75], color: '#0055ff' }
+  ],
   'LED Diode': [
     { id: 'anode', position: [-0.1, -0.5, 0], color: '#ff3333' },
     { id: 'cathode', position: [0.1, -0.7, 0], color: '#0055ff' }
@@ -101,6 +109,8 @@ const getInternalEdges = (comp) => {
     case 'Momentary Push Button': return comp.data?.toggled ? [['p1', 'p2']] : [];
     case 'Piezo Buzzer': return [['pos', 'neg']];
     case 'Potentiometer': return [['p1', 'wiper']];
+    case 'Multimeter': return [['pos', 'neg']];
+    case 'Oscilloscope': return [['sig', 'gnd']];
     default: return [];
   }
 };
@@ -352,6 +362,146 @@ const PotentiometerModel = ({ value }) => {
   );
 };
 
+const MultimeterModel = ({ isPowered, voltage }) => {
+  const displayVal = isPowered ? `${voltage.toFixed(2)}V` : "0.00V";
+  return (
+    <group>
+      {/* Handheld Yellow rubber shock case */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[1.2, 1.8, 0.4]} />
+        <meshStandardMaterial color="#ffcc00" roughness={0.5} />
+      </mesh>
+      {/* Dark Faceplate */}
+      <mesh position={[0, 0, 0.05]}>
+        <boxGeometry args={[1.0, 1.6, 0.32]} />
+        <meshStandardMaterial color="#1a1d20" roughness={0.8} />
+      </mesh>
+      {/* LCD screen border */}
+      <mesh position={[0, 0.4, 0.22]}>
+        <boxGeometry args={[0.8, 0.4, 0.02]} />
+        <meshStandardMaterial color="#1c2d1b" roughness={0.9} />
+      </mesh>
+      {/* Glowing screen backing */}
+      <mesh position={[0, 0.4, 0.23]}>
+        <boxGeometry args={[0.74, 0.34, 0.01]} />
+        <meshStandardMaterial 
+          color={isPowered ? "#66ff66" : "#2a3d2a"} 
+          emissive={isPowered ? "#33aa33" : "#000"} 
+          emissiveIntensity={isPowered ? 1.5 : 0} 
+        />
+      </mesh>
+      {/* Selector Dial Knob (Red) */}
+      <mesh position={[0, -0.2, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.25, 0.25, 0.08, 16]} />
+        <meshStandardMaterial color="#ef233c" roughness={0.6} />
+      </mesh>
+      {/* Selector marker line */}
+      <mesh position={[0, -0.1, 0.25]}>
+        <boxGeometry args={[0.04, 0.15, 0.04]} />
+        <meshStandardMaterial color="#ffffff" />
+      </mesh>
+      {/* Red positive jack */}
+      <mesh position={[-0.25, -0.6, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.1, 12]} />
+        <meshStandardMaterial color="#d90429" metalness={0.6} />
+      </mesh>
+      {/* Black negative jack */}
+      <mesh position={[0.25, -0.6, 0.22]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.1, 12]} />
+        <meshStandardMaterial color="#111" metalness={0.6} />
+      </mesh>
+    </group>
+  );
+};
+
+const OscilloscopeModel = ({ isPowered, signalType }) => {
+  const lineRef = useRef();
+  
+  useFrame((state) => {
+    if (lineRef.current) {
+      const points = [];
+      const width = 1.2;
+      const count = 30;
+      const t = state.clock.getElapsedTime();
+      
+      for (let i = 0; i <= count; i++) {
+        const x = (i / count) * width - width / 2;
+        let y = 0;
+        if (isPowered) {
+          if (signalType === 'pulse') {
+            y = Math.sin(t * 10) > 0 ? 0.35 : -0.35;
+          } else if (signalType === 'analog') {
+            y = 0.25;
+          } else {
+            y = Math.sin(x * 6 + t * 4) * 0.15;
+          }
+        }
+        points.push(new THREE.Vector3(x, y, 0));
+      }
+      lineRef.current.geometry.setFromPoints(points);
+    }
+  });
+
+  return (
+    <group>
+      {/* Main Bench Cabinet */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[2.2, 1.6, 1.4]} />
+        <meshStandardMaterial color="#3a3d40" roughness={0.7} metalness={0.4} />
+      </mesh>
+      {/* Faceplate frame */}
+      <mesh position={[0, 0, 0.71]}>
+        <boxGeometry args={[2.1, 1.5, 0.04]} />
+        <meshStandardMaterial color="#1e2226" roughness={0.9} />
+      </mesh>
+      {/* CRT Screen framing */}
+      <mesh position={[-0.2, 0.1, 0.74]}>
+        <boxGeometry args={[1.4, 1.1, 0.02]} />
+        <meshStandardMaterial color="#0b1c11" roughness={0.9} />
+      </mesh>
+      {/* Green screen grid mesh */}
+      <mesh position={[-0.2, 0.1, 0.75]}>
+        <boxGeometry args={[1.34, 1.04, 0.01]} />
+        <meshStandardMaterial 
+          color={isPowered ? "#00ff33" : "#0d2b0d"} 
+          emissive={isPowered ? "#00ff33" : "#000"} 
+          emissiveIntensity={isPowered ? 1.0 : 0} 
+          transparent
+          opacity={0.9}
+        />
+      </mesh>
+      {/* Live vector line trace */}
+      {isPowered && (
+        <group position={[-0.2, 0.1, 0.77]}>
+          <line ref={lineRef}>
+            <bufferGeometry />
+            <lineBasicMaterial color="#39ff14" linewidth={3} depthWrite={false} />
+          </line>
+        </group>
+      )}
+      {/* Control adjustment dials */}
+      <mesh position={[0.7, 0.35, 0.75]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.08, 12]} />
+        <meshStandardMaterial color="#ccc" />
+      </mesh>
+      <mesh position={[0.7, -0.05, 0.75]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.08, 12]} />
+        <meshStandardMaterial color="#ccc" />
+      </mesh>
+      {/* Red input socket */}
+      <mesh position={[0.6, -0.45, 0.75]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.1, 12]} />
+        <meshStandardMaterial color="#ff3333" />
+      </mesh>
+      {/* Black input socket */}
+      <mesh position={[0.8, -0.45, 0.75]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.1, 12]} />
+        <meshStandardMaterial color="#111" />
+      </mesh>
+    </group>
+  );
+};
+
 const MotorModel = ({ rpm }) => {
   const shaftRef = useRef();
   useFrame((_, delta) => {
@@ -556,7 +706,7 @@ const AxleModel = ({ rpm }) => {
   );
 };
 
-const ModelFactory = ({ comp, isPowered, rpm, potValue, onStartWire, onEndWire, onToggle }) => {
+const ModelFactory = ({ comp, isPowered, rpm, potValue, voltage, signalType, onStartWire, onEndWire, onToggle }) => {
   const pins = PIN_MAP[comp.type] || [];
   
   const BaseMesh = () => {
@@ -605,6 +755,10 @@ const ModelFactory = ({ comp, isPowered, rpm, potValue, onStartWire, onEndWire, 
         return <LaserModel isPowered={isPowered} potValue={potValue} />;
       case 'Piezo Buzzer':
         return <PiezoModel isPowered={isPowered} />;
+      case 'Multimeter':
+        return <MultimeterModel isPowered={isPowered} voltage={voltage} />;
+      case 'Oscilloscope':
+        return <OscilloscopeModel isPowered={isPowered} signalType={signalType} />;
       case 'Resistor':
         return (
           <group rotation={[0, 0, Math.PI / 2]}>
@@ -719,7 +873,7 @@ const ModelFactory = ({ comp, isPowered, rpm, potValue, onStartWire, onEndWire, 
   );
 };
 
-const DraggableModel = ({ comp, isActive, isPowered, rpm, potValue, isDragging, dragPos, onClick, onCommit, onStartWire, onEndWire, onToggle, onStartDrag }) => {
+const DraggableModel = ({ comp, isActive, isPowered, rpm, potValue, voltage, signalType, isDragging, dragPos, onClick, onCommit, onStartWire, onEndWire, onToggle, onStartDrag }) => {
   const matrix = useMemo(() => {
     const m = new THREE.Matrix4();
     if (comp.matrix) m.fromArray(comp.matrix);
@@ -752,7 +906,7 @@ const DraggableModel = ({ comp, isActive, isPowered, rpm, potValue, isDragging, 
            onClick(comp.id); 
         }
       }}>
-        <ModelFactory comp={comp} isPowered={isPowered} rpm={rpm} potValue={potValue} onStartWire={onStartWire} onEndWire={onEndWire} onToggle={onToggle} />
+        <ModelFactory comp={comp} isPowered={isPowered} rpm={rpm} potValue={potValue} voltage={voltage} signalType={signalType} onStartWire={onStartWire} onEndWire={onEndWire} onToggle={onToggle} />
       </group>
     </PivotControls>
   );
@@ -846,7 +1000,7 @@ const Canvas = () => {
     return () => clearInterval(interval);
   }, [currentComponents]);
 
-  const { poweredIds, rpmMap } = useMemo(() => {
+  const { poweredIds, rpmMap, voltageMap, signalMap } = useMemo(() => {
     const powered = new Set();
     const adj = {};
     const mechAdj = {};
@@ -950,11 +1104,17 @@ const Canvas = () => {
        return 1;
     };
 
+    const voltages = {};
+    const signals = {};
     const rpms = {};
     const mechQ = [];
+
+    const pot = currentComponents.find(x => x.type === 'Potentiometer');
+    const scale = pot ? (pot.data?.value !== undefined ? pot.data.value : 0.5) : 1.0;
+
     currentComponents.forEach(c => {
        if (c.type === 'DC Brushed Motor' && powered.has(c.id)) {
-           rpms[c.id] = 20; // Base motor RPM
+           rpms[c.id] = 20 * scale; 
            mechQ.push(c.id);
        }
     });
@@ -968,16 +1128,67 @@ const Canvas = () => {
                if (!mechVisited.has(n)) {
                    mechVisited.add(n);
                    const rNext = getRadius(n);
-                   // Belt/Gear RPM ratio transfer: RPM_B = -RPM_A * (R_A / R_B)
-                   // Negative sign simulates physics of gears meshing (opposite rotation direction)
                    rpms[n] = -rpms[curr] * (rCurr / rNext);
                    mechQ.push(n);
                }
            }
        }
     }
+
+    currentComponents.forEach(c => {
+      if (c.type === 'Multimeter') {
+        let v = 0;
+        for (const bat of batteries) {
+          const baseV = bat.type === '9V Battery' ? 9.0 : (bat.type === 'AA Battery Cell' ? 1.5 : 12.0);
+          const activeV = baseV * scale;
+          
+          if (hasPath(`${bat.id}:pos`, `${c.id}:pos`) && hasPath(`${bat.id}:neg`, `${c.id}:neg`)) {
+            v = activeV; break;
+          } else if (hasPath(`${bat.id}:pos`, `${c.id}:neg`) && hasPath(`${bat.id}:neg`, `${c.id}:pos`)) {
+            v = -activeV; break;
+          }
+        }
+        for (const mcu of virtualBatteries) {
+          if (hasPath(`${mcu.id}:d0`, `${c.id}:pos`) && hasPath(`${mcu.id}:gnd`, `${c.id}:neg`)) {
+            v = 5.0; break;
+          } else if (hasPath(`${mcu.id}:d0`, `${c.id}:neg`) && hasPath(`${mcu.id}:gnd`, `${c.id}:pos`)) {
+            v = -5.0; break;
+          }
+        }
+        voltages[c.id] = v;
+      }
+    });
+
+    currentComponents.forEach(c => {
+      if (c.type === 'Oscilloscope') {
+        let type = 'idle';
+        
+        const mcus = currentComponents.filter(x => x.type === 'Microcontroller Board');
+        let connectedToMcu = false;
+        for (const mcu of mcus) {
+          if (hasPath(`${mcu.id}:d0`, `${c.id}:sig`)) {
+            connectedToMcu = true; break;
+          }
+        }
+        
+        if (connectedToMcu) {
+          type = 'pulse';
+        } else {
+          let connectedToBattery = false;
+          for (const bat of batteries) {
+            if (hasPath(`${bat.id}:pos`, `${c.id}:sig`)) {
+              connectedToBattery = true; break;
+            }
+          }
+          if (connectedToBattery) {
+            type = 'analog';
+          }
+        }
+        signals[c.id] = type;
+      }
+    });
     
-    return { poweredIds: powered, rpmMap: rpms };
+    return { poweredIds: powered, rpmMap: rpms, voltageMap: voltages, signalMap: signals };
   }, [currentComponents, currentWires, firmwareTick]);
 
   useEffect(() => {
@@ -1189,10 +1400,12 @@ const Canvas = () => {
               {currentComponents.map((comp) => {
                 const pot = currentComponents.find(x => x.type === 'Potentiometer');
                 const potValue = pot ? (pot.data?.value !== undefined ? pot.data.value : 0.5) : 1.0;
+                const voltage = voltageMap[comp.id] || 0;
+                const signalType = signalMap[comp.id] || 'idle';
                 return (
                   <DraggableModel 
                     key={comp.id} comp={comp} isActive={activeId === comp.id} isPowered={poweredIds.has(comp.id)} rpm={rpmMap[comp.id] || 0}
-                    potValue={potValue}
+                    potValue={potValue} voltage={voltage} signalType={signalType}
                     isDragging={activeDragId === comp.id} dragPos={dragPos}
                     onClick={setActiveId} onCommit={(id, matrix) => commitChange(currentComponents.map(c => c.id === id ? { ...c, matrix } : c))}
                     onStartDrag={(id) => { setActiveId(id); setActiveDragId(id); setDragPos(null); }}
